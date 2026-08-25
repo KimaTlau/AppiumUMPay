@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="UMPay Mobile QA Suite" verbose="1">
+
+    <listeners>
+        <!-- Registration moved onto the test class as @Listeners, so the report and its
+             email also happen when the class or a single method is launched straight from
+             the IDE, which does not read this file. Declaring it in both places would
+             register it twice and send two emails. -->
+    </listeners>
+
+    <test name="UMPay Mobile Flows">
+        <classes>
+            <class name="org.example.MobileFlowTest"/>
+        </classes>
+    </test>
+
+    <!-- Register runs last, after Logout, because it starts from the login screen. -->
+    <!-- Method order within the class is pinned by the @Test priority attributes.  -->
+
+
+</suite>

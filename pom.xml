@@ -1,0 +1,116 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.example</groupId>
+  <artifactId>AppiumUMPay</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>untitled</name>
+  <url>http://maven.apache.org</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!--
+      release rather than source/target. source/target only checks syntax and bytecode
+      version, so code can compile against a JDK 24 API, claim to target 11, and then fail
+      at runtime somewhere else. release pins the API set too, so the build means the same
+      thing whether it runs on the JDK 17 in JAVA_HOME or the JDK 24 the IDE is set to.
+    -->
+    <maven.compiler.release>11</maven.compiler.release>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+      <version>4.28.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-devtools</artifactId>
+      <version>4.0.0-beta-4</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.appium</groupId>
+      <artifactId>java-client</artifactId>
+      <version>9.3.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>7.7.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.aventstack</groupId>
+      <artifactId>extentreports</artifactId>
+      <version>5.1.1</version>
+      <scope>test</scope>
+      <exclusions>
+        <!--
+          ExtentReports leaks Lombok 1.18.26 as a transitive dependency. Lombok is a
+          compile-time annotation processor - ExtentReports' own generated code is already
+          baked into its jar - so nothing here needs it at runtime, and no source in this
+          project uses it.
+
+          Left in place it is actively harmful. Any Lombok before 1.18.36 reaches into
+          javac internals that JDK 24 changed, and IntelliJ, which runs annotation
+          processing itself, dies on it with
+
+              java: java.lang.ExceptionInInitializerError
+              com.sun.tools.javac.code.TypeTag :: UNKNOWN
+
+          Maven never showed this because it runs on the JDK 17 in JAVA_HOME while the IDE
+          is set to 24, so the project built from the command line and failed in the IDE.
+          Dropping the processor fixes it for every JDK rather than for one of them. If
+          Lombok is ever wanted deliberately, 1.18.38 is the version that handles JDK 24.
+        -->
+        <exclusion>
+          <groupId>org.projectlombok</groupId>
+          <artifactId>lombok</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- Reads the emailed registration code out of the mailbox over IMAP, so the
+         sign-up flow finishes without a person watching an inbox. Same version the
+         UMPay web suite uses, so one local repository serves both. -->
+    <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>jakarta.mail</artifactId>
+      <version>2.0.1</version>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Enables `mvn test` to run the TestNG suite (MobileFlowTest) directly,
+           in addition to running it via IntelliJ's built-in TestNG runner. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+        <configuration>
+          <suiteXmlFiles>
+            <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
+          </suiteXmlFiles>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

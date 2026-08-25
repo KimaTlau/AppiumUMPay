@@ -1,0 +1,449 @@
+package org.example;
+
+import io.appium.java_client.AppiumDriver;
+import io.appium.java_client.android.AndroidDriver;
+import io.appium.java_client.android.options.UiAutomator2Options;
+import io.appium.java_client.AppiumBy;
+import org.openqa.selenium.By;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.Assert;
+import org.testng.annotations.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.time.Duration;
+import java.util.List;
+
+/**
+ * UMPay Android app (Flutter) mobile QA suite.
+ *
+ * IMPORTANT — this app is built with Flutter. Flutter renders its UI on a single
+ * canvas and does not expose native Android resource-ids to the accessibility tree
+ * the way a native app does. Elements below are located by visible TEXT / content-desc
+ * (Flutter exposes these via its default widget semantics), which is the standard
+ * approach for automating a production Flutter build with UiAutomator2 when the app
+ * does not ship the Flutter Driver extension (this build does not — no VM service /
+ * debuggable flag was found when the APK was inspected).
+ *
+ * Because of this, some selectors below may need small adjustments once you run
+ * Appium Inspector against the live app — if a step fails, inspect the failing screen
+ * and swap in the exact text/content-desc Inspector shows. Each locator is isolated in
+ * its own helper call so a fix is a one-line change.
+ *
+ * SAFETY BOUNDARY (same as the web QA pass): every flow is driven all the way to its
+ * final confirmation/order-summary screen — amounts entered, currency/account/template
+ * selected — but the final "Confirm" / "Convert" button is NEVER tapped, so no real
+ * funds move. Do not remove the stopping points below. Register follows the same
+ * boundary in spirit: the form is filled with test data, but the Captcha code is never
+ * read/entered and the Register button is never tapped, so no new account is created —
+ * completing a Captcha and creating an account are both outside what this suite performs.
+ *
+ * Run order matters (Register first since it needs the logged-out Login screen, then
+ * Login, then Logout last) — see testng.xml, which pins this with a <test> element and
+ * method ordering, or run this class directly in IntelliJ with "Run 'MobileFlowTest'"
+ * (TestNG picks up @Test method order via priority attributes below).
+ */
+public class MobileFlowTest {
+
+    // ---- Device / app capabilities (same physical device already used in UMPayTest.java) ----
+    private static final String DEVICE_NAME = "Redmi 13C";
+    private static final String UDID = "YPYXSKCQXCXWVW55";
+    private static final String PLATFORM_VERSION = "15";
+    private static final String APP_PACKAGE = "com.umpay.me";
+    private static final String APP_ACTIVITY = "com.umpay.me.MainActivity";
+    private static final String APPIUM_SERVER = System.getProperty("appium.server", "http://127.0.0.1:4723");
+
+    // ---- Test account (same credentials used for the web QA pass) ----
+    private static final String EMAIL = System.getProperty("umpay.email", "elkaytlau7@gmail.com");
+    private static final String PASSWORD = System.getProperty("umpay.password", "12345678");
+
+    // ---- Register test data (a throwaway address — no account is actually created; see
+    //      testRegister() below, which stops before the Captcha and Register button) ----
+    private static final String REGISTER_TEST_EMAIL =
+            System.getProperty("umpay.register.email", "umpay.qa.register.test@example.com");
+    private static final String REGISTER_TEST_PASSWORD =
+            System.getProperty("umpay.register.password", "TestQA@2026");
+
+    private static final String SCREENSHOT_DIR = "screenshots";
+    private static AndroidDriver driver;
+    private static int shotCounter = 1;
+
+    @BeforeClass
+    public void setUp() throws Exception {
+        new File(SCREENSHOT_DIR).mkdirs();
+
+        UiAutomator2Options options = new UiAutomator2Options()
+                .setDeviceName(DEVICE_NAME)
+                .setUdid(UDID)
+                .setPlatformVersion(PLATFORM_VERSION)
+                .setAppPackage(APP_PACKAGE)
+                .setAppActivity(APP_ACTIVITY)
+                .setAutomationName("UiAutomator2")
+                .setNewCommandTimeout(Duration.ofMinutes(5))
+                // Grant runtime permissions (camera/notifications/etc.) automatically so
+                // permission dialogs don't block the flow.
+                .amend("autoGrantPermissions", true)
+                // Keep existing app install + data — we want to test the real signed-in
+                // state, not wipe the device's app data on every run.
+                .setNoReset(true)
+                .setFullReset(false);
+
+        driver = new AndroidDriver(new URL(APPIUM_SERVER), options);
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2));
+    }
+
+    @AfterClass
+    public void tearDown() {
+        if (driver != null) {
+            driver.quit();
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------------------
+
+    private WebDriverWait wait(int seconds) {
+        return new WebDriverWait(driver, Duration.ofSeconds(seconds));
+    }
+
+    /** Find by exact or partial visible text (works for Flutter Text/Button semantics). */
+    private By byText(String text) {
+        return AppiumBy.androidUIAutomator(
+                "new UiSelector().textContains(\"" + text + "\")");
+    }
+
+    /** Find by accessibility label / content-desc (Flutter Semantics label). */
+    private By byDesc(String desc) {
+        return AppiumBy.androidUIAutomator(
+                "new UiSelector().descriptionContains(\"" + desc + "\")");
+    }
+
+    private WebElement waitVisible(By locator, int seconds) {
+        return wait(seconds).until(ExpectedConditions.presenceOfElementLocated(locator));
+    }
+
+    private boolean isPresent(By locator, int seconds) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(seconds))
+                    .until(ExpectedConditions.presenceOfElementLocated(locator));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Screenshot helper — saves sequentially-numbered PNGs, mirroring the web QA gallery. */
+    private void shot(String label) {
+        try {
+            File src = driver.getScreenshotAs(OutputType.FILE);
+            String name = String.format("%02d_%s.png", shotCounter++, label);
+            Files.copy(src.toPath(), new File(SCREENSHOT_DIR, name).toPath());
+            System.out.println("Saved screenshot: " + name);
+        } catch (IOException e) {
+            System.out.println("Screenshot failed for " + label + ": " + e.getMessage());
+        }
+    }
+
+    private void sleep(long ms) {
+        try { Thread.sleep(ms); } catch (InterruptedException ignored) {}
+    }
+
+    /** Dismisses a biometric-prompt / permission dialog if the OS shows one on launch. */
+    private void dismissSystemDialogsIfPresent() {
+        try {
+            List<WebElement> cancelButtons = driver.findElements(
+                    AppiumBy.androidUIAutomator("new UiSelector().textMatches(\"(?i)cancel|not now|deny|no thanks\")"));
+            if (!cancelButtons.isEmpty()) {
+                cancelButtons.get(0).click();
+                sleep(500);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    // ------------------------------------------------------------------
+    // TC-M-00 — Register (fills the form; never submits the Captcha or taps Register)
+    // ------------------------------------------------------------------
+    @Test(priority = 1)
+    public void testRegister() {
+        dismissSystemDialogsIfPresent();
+        shot("app_launch_register_check");
+
+        // If the app launched into an already-authenticated session (noReset=true keeps
+        // whatever state a previous run left it in), log out first so the Login screen —
+        // and its "Register" link — is reachable. This keeps the flow deterministic
+        // regardless of what state the device was left in.
+        if (isPresent(byText("Wallet"), 5)) {
+            System.out.println("Already logged in from a prior session — logging out first so Register is reachable.");
+            By profileEntry = isPresent(byText("Profile"), 3) ? byText("Profile") : byDesc("avatar");
+            if (isPresent(profileEntry, 5)) {
+                driver.findElement(profileEntry).click();
+                sleep(1000);
+            }
+            if (isPresent(byText("Logout"), 3)) {
+                driver.findElement(byText("Logout")).click();
+                sleep(1000);
+                if (isPresent(byText("Yes"), 3)) {
+                    driver.findElement(byText("Yes")).click();
+                }
+                sleep(2000);
+            }
+        }
+
+        boolean onLoginScreen = isPresent(byText("Register"), 15);
+        shot("login_screen_before_register");
+        Assert.assertTrue(onLoginScreen, "Expected the Login screen with a \"Register\" link to be reachable");
+
+        driver.findElement(byText("Register")).click();
+        sleep(1500);
+        shot("register_page_empty");
+
+        // Email method fields — same accessibility-id-first pattern as Login.
+        By emailField = isPresent(AppiumBy.accessibilityId("Email"), 3)
+                ? AppiumBy.accessibilityId("Email")
+                : byText("Email");
+        WebElement email = waitVisible(emailField, 10);
+        email.click();
+        email.sendKeys(REGISTER_TEST_EMAIL);
+
+        By passwordField = isPresent(AppiumBy.accessibilityId("Password"), 3)
+                ? AppiumBy.accessibilityId("Password")
+                : byText("Password");
+        WebElement password = driver.findElement(passwordField);
+        password.click();
+        password.sendKeys(REGISTER_TEST_PASSWORD);
+
+        shot("register_email_filled");
+
+        // Confirm a Captcha Code field is present and required — we log this rather than
+        // asserting hard, since its exact wording may shift; see the note above about
+        // Inspector-verifying selectors once this runs against the live device.
+        boolean captchaPresent = isPresent(byText("Captcha"), 3);
+        System.out.println("Captcha Code field present: " + captchaPresent);
+
+        // Also confirm the Phone Number registration method renders correctly.
+        if (isPresent(byText("Phone Number"), 3)) {
+            driver.findElement(byText("Phone Number")).click();
+            sleep(1000);
+            shot("register_phone_tab");
+            // Switch back to Email so the app is left in a consistent state for cleanup.
+            if (isPresent(byText("Email"), 3)) {
+                driver.findElement(byText("Email")).click();
+                sleep(500);
+            }
+        }
+
+        // SAFETY: do NOT read/enter the Captcha code and do NOT tap "Register" here —
+        // completing a Captcha and creating a new account are both outside what this QA
+        // automation performs. Navigate back to the Login screen for the next test.
+        driver.navigate().back();
+        sleep(1000);
+    }
+
+    // ------------------------------------------------------------------
+    // TC-M-01 — Login
+    // ------------------------------------------------------------------
+    @Test(priority = 2)
+    public void testLogin() {
+        dismissSystemDialogsIfPresent();
+        shot("app_launch");
+
+        // Email field — try accessibility id "Email" first, fall back to hint-text search.
+        By emailField = isPresent(AppiumBy.accessibilityId("Email"), 3)
+                ? AppiumBy.accessibilityId("Email")
+                : byText("Email");
+        WebElement email = waitVisible(emailField, 15);
+        email.click();
+        email.sendKeys(EMAIL);
+
+        By passwordField = isPresent(AppiumBy.accessibilityId("Password"), 3)
+                ? AppiumBy.accessibilityId("Password")
+                : byText("Password");
+        WebElement password = driver.findElement(passwordField);
+        password.click();
+        password.sendKeys(PASSWORD);
+
+        shot("login_filled");
+
+        driver.findElement(byText("Login")).click();
+        sleep(3000);
+        dismissSystemDialogsIfPresent();
+
+        // Verify we landed on Home — look for the "Wallets" section header used on web.
+        boolean onHome = isPresent(byText("Wallet"), 15);
+        shot("home_after_login");
+        Assert.assertTrue(onHome, "Expected to land on Home/Wallets screen after login");
+    }
+
+    // ------------------------------------------------------------------
+    // TC-M-02 — Deposit (stops before final Confirm)
+    // ------------------------------------------------------------------
+    @Test(priority = 3, dependsOnMethods = "testLogin")
+    public void testDeposit() {
+        driver.findElement(byText("Deposit")).click();
+        sleep(1500);
+        shot("deposit_page");
+
+        // Currency selector — same "Select Currency" / pre-filled default pattern seen on web.
+        if (isPresent(byText("Select Currency"), 3)) {
+            driver.findElement(byText("Select Currency")).click();
+            sleep(1000);
+            shot("deposit_currency_dialog");
+            // Pick the first currency row (typically HKD / wallet default).
+            List<WebElement> rows = driver.findElements(byText("HKD"));
+            if (!rows.isEmpty()) rows.get(0).click();
+            sleep(500);
+        }
+
+        By amountField = byText("Amount");
+        // Amount input is usually the numeric field directly under the "Amount" label;
+        // locate the nearest editable field via UiAutomator class filter.
+        WebElement amount = driver.findElement(
+                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.EditText\")"));
+        amount.click();
+        amount.sendKeys("500");
+        shot("deposit_amount_entered");
+
+        if (isPresent(byText("Select Payment Type"), 3)) {
+            driver.findElement(byText("Select Payment Type")).click();
+            sleep(1000);
+            shot("deposit_payment_type_options");
+            if (isPresent(byText("Bank"), 3)) {
+                driver.findElement(byText("Bank")).click();
+                sleep(1000);
+            }
+        }
+
+        shot("deposit_final_form");
+        // SAFETY: do NOT tap "Confirm" here — this would submit a real deposit request.
+    }
+
+    // ------------------------------------------------------------------
+    // TC-M-03 — Withdraw (stops before final Confirm)
+    // ------------------------------------------------------------------
+    @Test(priority = 4, dependsOnMethods = "testLogin")
+    public void testWithdraw() {
+        driver.findElement(byText("Withdraw")).click();
+        sleep(1500);
+        shot("withdraw_page");
+
+        WebElement amount = driver.findElement(
+                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.EditText\")"));
+        amount.click();
+        amount.sendKeys("500");
+        shot("withdraw_amount_entered");
+
+        if (isPresent(byText("From Template"), 3)) {
+            driver.findElement(byText("From Template")).click();
+            sleep(1000);
+        }
+        if (isPresent(byText("Select Payment Account"), 3)) {
+            driver.findElement(byText("Select Payment Account")).click();
+            sleep(1000);
+            shot("withdraw_select_payment_account");
+            // Pick the first saved account (e.g. "Bank of China" test template).
+            List<WebElement> accounts = driver.findElements(byText("Bank"));
+            if (!accounts.isEmpty()) accounts.get(0).click();
+            sleep(1000);
+        }
+
+        shot("withdraw_final_order_summary");
+        // SAFETY: do NOT tap "Confirm" here — this would submit a real withdrawal request.
+    }
+
+    // ------------------------------------------------------------------
+    // TC-M-04 — Transfer (UMPay to Existing template; stops before final Confirm)
+    // ------------------------------------------------------------------
+    @Test(priority = 5, dependsOnMethods = "testLogin")
+    public void testTransfer() {
+        driver.findElement(byText("Transfer")).click();
+        sleep(1500);
+        shot("transfer_hub");
+
+        if (isPresent(byText("UMPay to Existing template"), 5)) {
+            driver.findElement(byText("UMPay to Existing template")).click();
+            sleep(1500);
+            shot("transfer_select_template");
+
+            // Pick the first saved template (e.g. "Test 1" seen on web).
+            List<WebElement> templates = driver.findElements(
+                    AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.TextView\")"));
+            if (!templates.isEmpty()) templates.get(0).click();
+            sleep(1500);
+            shot("transfer_template_loaded");
+
+            WebElement amount = driver.findElement(
+                    AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.EditText\")"));
+            amount.click();
+            amount.sendKeys("150");
+            shot("transfer_final_form");
+        } else {
+            System.out.println("\"UMPay to Existing template\" option not found — captured hub screenshot only.");
+        }
+        // SAFETY: do NOT tap "Next"/"Confirm" here — this would submit a real transfer.
+    }
+
+    // ------------------------------------------------------------------
+    // TC-M-05 — Convert (stops before final Convert)
+    // ------------------------------------------------------------------
+    @Test(priority = 6, dependsOnMethods = "testLogin")
+    public void testConvert() {
+        driver.findElement(byText("Convert")).click();
+        sleep(1500);
+        shot("convert_page");
+
+        if (isPresent(byText("Convert To"), 5)) {
+            // Tap the "Convert To" target-currency field to open the picker.
+            driver.findElement(byText("Convert To")).click();
+            sleep(1000);
+            shot("convert_select_currency");
+
+            List<WebElement> usd = driver.findElements(byText("USD"));
+            if (!usd.isEmpty()) usd.get(0).click();
+            sleep(1000);
+        }
+
+        List<WebElement> amountFields = driver.findElements(
+                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.EditText\")"));
+        if (!amountFields.isEmpty()) {
+            amountFields.get(0).click();
+            amountFields.get(0).sendKeys("1000");
+        }
+        shot("convert_final_calculation");
+        // SAFETY: do NOT tap "Convert" here — this would submit a real conversion.
+    }
+
+    // ------------------------------------------------------------------
+    // TC-M-06 — Logout
+    // ------------------------------------------------------------------
+    @Test(priority = 7, dependsOnMethods = "testLogin")
+    public void testLogout() {
+        // Profile/avatar icon is typically top-right or reachable via a "Profile"/"Me" tab
+        // on mobile nav — adjust this locator via Inspector if the app uses a bottom-nav
+        // "Profile" tab instead of a top-right avatar like the web header.
+        By profileEntry = isPresent(byText("Profile"), 3) ? byText("Profile") : byDesc("avatar");
+        if (isPresent(profileEntry, 5)) {
+            driver.findElement(profileEntry).click();
+            sleep(1000);
+        }
+        shot("profile_panel");
+
+        driver.findElement(byText("Logout")).click();
+        sleep(1000);
+        shot("logout_confirm_dialog");
+
+        if (isPresent(byText("Yes"), 3)) {
+            driver.findElement(byText("Yes")).click();
+        }
+        sleep(2000);
+
+        boolean onLogin = isPresent(byText("Login"), 10);
+        shot("logout_success");
+        Assert.assertTrue(onLogin, "Expected to land back on the Login screen after logout");
+    }
+}

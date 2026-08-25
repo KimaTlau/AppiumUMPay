@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="UMPay Register Flow" verbose="1">
+
+    <listeners>
+        <!-- Registration moved onto the test class as @Listeners, so the report and its
+             email also happen when the class or a single method is launched straight from
+             the IDE, which does not read this file. Declaring it in both places would
+             register it twice and send two emails. -->
+    </listeners>
+
+    <!-- Just the path to the sign-up form. testRegister starts from the logged-out Login
+         screen, so it depends on testLogout, which in turn depends on testLogin; all three
+         have to be listed or TestNG refuses the run. The four money flows are left out —
+         they are unrelated to the captcha and cost about two minutes a run. -->
+    <test name="Register only">
+        <classes>
+            <class name="org.example.MobileFlowTest">
+                <methods>
+                    <include name="testLogin"/>
+                    <include name="testLogout"/>
+                    <include name="testRegister"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+</suite>
