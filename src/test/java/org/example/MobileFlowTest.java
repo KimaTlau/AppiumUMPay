@@ -90,7 +90,7 @@ public class MobileFlowTest {
     private static final String EMAIL = System.getProperty("umpay.email", "elkaytlau7@gmail.com");
     private static final String PASSWORD = System.getProperty("umpay.password", "12345678");
 
-    // ---- Register test data ----
+    // ---- Register test data 1----
 
     /**
      * A fresh address per run. A registered address cannot be reused, and the
