@@ -1,0 +1,11 @@
+Initial commit: offline captcha reader
+
+Command line wrapper around ddddocr for reading image captchas locally, used
+by the UMPay web and Android suites. Nothing leaves the machine.
+
+The vendored ddddocr library and its ONNX models are not committed - they
+come to 86MB, and one model alone is past the size GitHub starts warning
+about. Install it with: pip install ddddocr
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01GSo4GNogSTqwLvttvbBDcV

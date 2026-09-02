@@ -1,0 +1,12 @@
+### Vendored third-party library
+# ddddocr and its ONNX models come to 86MB, one file alone being 52MB - past the
+# size GitHub starts warning about, and it is not this project's code to carry.
+# Install it instead:  pip install ddddocr
+vendor/
+
+### Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
