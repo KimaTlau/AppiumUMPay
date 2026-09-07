@@ -2,26 +2,18 @@
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
 <suite name="UMPay Register Flow" verbose="1">
 
-    <listeners>
-        <!-- Registration moved onto the test class as @Listeners, so the report and its
-             email also happen when the class or a single method is launched straight from
-             the IDE, which does not read this file. Declaring it in both places would
-             register it twice and send two emails. -->
-    </listeners>
+    <!-- Just the sign-up path.
 
-    <!-- Just the path to the sign-up form. testRegister starts from the logged-out Login
-         screen, so it depends on testLogout, which in turn depends on testLogin; all three
-         have to be listed or TestNG refuses the run. The four money flows are left out —
-         they are unrelated to the captcha and cost about two minutes a run. -->
+         @register is held out of the ordinary suite because it creates a real account on
+         the test environment and needs a captcha solved, so it is run deliberately rather
+         than nightly. The tag is passed as a suite parameter: cucumber-testng reads the
+         XML test's parameters as Cucumber properties, so this is the file-based equivalent
+         of -Dcucumber.filter.tags="@register". -->
+
     <test name="Register only">
+        <parameter name="cucumber.filter.tags" value="@register"/>
         <classes>
-            <class name="org.example.MobileFlowTest">
-                <methods>
-                    <include name="testLogin"/>
-                    <include name="testLogout"/>
-                    <include name="testRegister"/>
-                </methods>
-            </class>
+            <class name="com.umpay.mobile.runner.MobileTestRunner"/>
         </classes>
     </test>
 

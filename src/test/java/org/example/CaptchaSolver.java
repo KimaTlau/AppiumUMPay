@@ -25,8 +25,10 @@ import java.util.concurrent.TimeUnit;
  * therefore expected to submit the answer and, when the app rejects it, refresh
  * the image and ask again - a single reading is a guess, not the code.
  *
- * Paths default to this machine's layout and can be overridden per run, for
- * example -Dumpay.ocr.script=/somewhere/else/ocr.py.
+ * The script is looked for inside this project, which is where the captcha tool
+ * now lives; a run started from the project directory finds it without any
+ * configuration. Both paths can still be overridden per run, for example
+ * -Dumpay.ocr.script=/somewhere/else/ocr.py.
  */
 public class CaptchaSolver {
 
@@ -34,7 +36,7 @@ public class CaptchaSolver {
             System.getenv("LOCALAPPDATA") + "\\Programs\\Python\\Python312\\python.exe");
 
     private static final String SCRIPT = System.getProperty("umpay.ocr.script",
-            "C:\\Users\\Hp15s-fq2\\IdeaProjects\\Captcha\\ocr.py");
+            "Captcha/ocr.py");
 
     /** 0 restricts the model to digits, which is what this app's captcha issues. */
     private static final String RANGES = System.getProperty("umpay.ocr.ranges", "0");

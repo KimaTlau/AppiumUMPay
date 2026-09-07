@@ -48,6 +48,18 @@
     </dependency>
 
     <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-java</artifactId>
+      <version>7.20.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-testng</artifactId>
+      <version>7.20.1</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.testng</groupId>
       <artifactId>testng</artifactId>
       <version>7.7.1</version>
@@ -92,6 +104,24 @@
       <groupId>com.sun.mail</groupId>
       <artifactId>jakarta.mail</artifactId>
       <version>2.0.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Reads the .xlsx test data workbooks under TestData/. The web suite keeps its
+         inputs in Excel and names the workbook, sheet and row from the feature file;
+         this project follows the same pattern, so it needs the same reader. Same
+         version the UMPay web suite uses, so one local repository serves both. -->
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi</artifactId>
+      <version>5.2.5</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>5.2.5</version>
       <scope>test</scope>
     </dependency>
 

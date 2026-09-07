@@ -43,10 +43,25 @@ public final class ReportMailer {
     /** 465 is implicit SSL, which needs no STARTTLS negotiation. */
     private static final String PORT = System.getProperty("umpay.smtp.port", "465");
 
-    private static final String FROM =
+    /**
+     * The mailbox the report is sent from and delivered to.
+     *
+     * One address doing both jobs is deliberate, and matches the UMPay web suite, whose
+     * config.properties carries the same value for mail.from and mail.to. It is also the
+     * mailbox the registration codes are read from, so a single Gmail app password covers
+     * sending the report, receiving it, and reading a verification code - and there is one
+     * place to change if the account ever moves.
+     *
+     * Gmail does deliver a message addressed to its own account; it appears in the inbox
+     * as well as in Sent.
+     */
+    private static final String MAILBOX =
             System.getProperty("umpay.mail.address", "lawma195.infinity@gmail.com");
 
-    private static final String TO = System.getProperty("umpay.report.mail.to", FROM);
+    private static final String FROM = MAILBOX;
+
+    /** Sent to the same mailbox unless a run is told otherwise. */
+    private static final String TO = System.getProperty("umpay.report.mail.to", MAILBOX);
 
     /**
      * Largest attachment worth trying, in bytes.
