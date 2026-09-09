@@ -1,4 +1,4 @@
-package org.example;
+package com.umpay.mobile.runner;
 
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;;
@@ -7,13 +7,8 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.remote.DesiredCapabilities;
-import org.openqa.selenium.remote.http.HttpClient;
 
 import java.net.URL;
-import java.net.MalformedURLException;
-
-import javax.lang.model.util.Elements;
 
 /**
  * Unit test for simple App.

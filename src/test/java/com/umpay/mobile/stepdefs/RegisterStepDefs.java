@@ -8,9 +8,9 @@ import com.umpay.mobile.utility.ExcelDataProvider;
 import com.umpay.mobile.utility.MobileBaseClass;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import org.example.CaptchaSolver;
-import org.example.MailCredentials;
-import org.example.VerificationCodeReader;
+import com.umpay.mobile.utility.CaptchaSolver;
+import com.umpay.mobile.utility.MailCredentials;
+import com.umpay.mobile.utility.VerificationCodeReader;
 
 import java.io.File;
 import java.io.IOException;

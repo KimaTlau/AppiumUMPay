@@ -7,7 +7,6 @@ import com.aventstack.extentreports.Status;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 import com.aventstack.extentreports.reporter.configuration.Theme;
 import io.cucumber.java.Scenario;
-import org.example.ReportMailer;
 
 import java.io.File;
 import java.time.LocalDateTime;

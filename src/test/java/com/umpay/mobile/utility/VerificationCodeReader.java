@@ -1,4 +1,4 @@
-package org.example;
+package com.umpay.mobile.utility;
 
 import jakarta.mail.Address;
 import jakarta.mail.Folder;
@@ -62,7 +62,7 @@ public class VerificationCodeReader {
     /**
      * Checks the mailbox wiring on its own, without running a whole suite.
      *
-     * <pre>mvn -o test-compile exec:java -Dexec.mainClass=org.example.VerificationCodeReader
+     * <pre>mvn -o test-compile exec:java -Dexec.mainClass=com.umpay.mobile.utility.VerificationCodeReader
      *     -Dexec.classpathScope=test -Dexec.args="lawma195.infinity+something@gmail.com 30"</pre>
      *
      * Worth having because "no code" has two very different causes — a mailbox that cannot

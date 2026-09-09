@@ -90,4 +90,86 @@ public class ProfilePage extends BasePage {
 		tapAtCentre(CONFIRM_LOGOUT, "the 'Yes, Logout' confirmation");
 
 	}
+
+	/**
+	 * Everything the panel offers to open, in the order it lists them.
+	 *
+	 * Read from what the panel says rather than from a list written down here: the web drawer
+	 * offers the same destinations and gained three of them during this suite's lifetime, so a
+	 * hard coded list is one that goes quietly out of date.
+	 */
+	public java.util.List<String> destinationsOffered() {
+
+		java.util.List<String> offered = new java.util.ArrayList<>();
+
+		for (String said : everythingOnThePanel()) {
+
+			for (String known : DESTINATIONS) {
+
+				if (said.startsWith(known) && !offered.contains(known)) {
+					offered.add(known);
+				}
+			}
+		}
+
+		return offered;
+	}
+
+	/** The destinations this panel is expected to carry, as the app labels them. */
+	private static final String[] DESTINATIONS = {
+		"Trade Record", "User List", "Commission Listing", "Fee Listing", "Wallets",
+		"Payment", "Templates", "Transfer Fee Setting", "Security", "Document verification",
+		"Language",
+	};
+
+	/** Opens one of the panel's destinations by the name it goes under. */
+	public void open(String destination) {
+
+		tapAtCentre(MobileLocators.labelled(destination), "the " + destination + " entry");
+	}
+
+	/**
+	 * The referral code the panel shows, without the words in front of it.
+	 *
+	 * The panel writes it as "Referral Code:" and the code on the line below, which arrives as
+	 * one label with a newline inside it.
+	 */
+	public String referralCode() {
+
+		for (String said : everythingOnThePanel()) {
+
+			if (said.startsWith("Referral Code")) {
+				return said.replace("Referral Code:", "").replaceAll("\\s+", " ").trim();
+			}
+		}
+
+		return "";
+	}
+
+	/** Every label the panel is showing, each on one line. */
+	public java.util.List<String> everythingOnThePanel() {
+
+		java.util.List<String> said = new java.util.ArrayList<>();
+
+		try {
+			for (org.openqa.selenium.WebElement label
+					: driver.findElements(MobileLocators.labelled(""))) {
+
+				String description = label.getAttribute("content-desc");
+
+				if (description != null && !description.isBlank()) {
+
+					String cleaned = description.replaceAll("\\s+", " ").trim();
+
+					if (!said.contains(cleaned)) {
+						said.add(cleaned);
+					}
+				}
+			}
+		} catch (Exception theListMoved) {
+			// A panel that redrew from under us is not one to report on.
+		}
+
+		return said;
+	}
 }
