@@ -15,7 +15,7 @@ Feature: UMPay mobile withdraw
   # this is enforced rather than trusted: no step and no page object method presses the
   # action.
 
-  @money
+  @withdraw @money @Withdraw_TC_001
   Scenario Outline: A withdrawal is validated before it can be confirmed
     Given I log into the UMPay application with valid credentials using "<row>" of "<excelSheetName>" of "<excelFileName>"
     When I open the "Withdrawal" form from the dashboard

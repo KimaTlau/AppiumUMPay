@@ -29,7 +29,7 @@ Feature: UMPay mobile deposit
   # was not there before, and Confirm stays disabled until a payment name is chosen too.
   # An earlier version of this scenario expected the amount alone to enable it, which said
   # more about the person writing the test than about the form.
-  @money
+  @deposit @money @Deposit_TC_001
   Scenario Outline: A deposit asks for payment details before it can be confirmed
     Given I log into the UMPay application with valid credentials using "<row>" of "<excelSheetName>" of "<excelFileName>"
     When I open the "Deposit" form from the dashboard

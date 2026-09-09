@@ -60,7 +60,7 @@ Feature: UMPay mobile transfers
     Given I log into the UMPay application with valid credentials using "1" of "Sheet1" of "Login_TestData.xlsx"
     When I open the transfer hub
 
-  @transfer
+  @transfer @Transfer_TC_001
   Scenario: The transfer hub offers every destination
     Then the transfer hub should offer the route "UMPay to Existing template"
     And the transfer hub should offer the route "UMPay to UMPay Wallet"
@@ -72,7 +72,7 @@ Feature: UMPay mobile transfers
   # Both payment app routes are listed with "Maintenance" in their own label and refuse to
   # open. The scenario asserts the refusal rather than avoiding the route, so the day the
   # service returns this fails and says so.
-  @transfer
+  @transfer @Transfer_TC_002
   Scenario Outline: A payment app route under maintenance refuses to open
     When I take the "<route>" route
     Then the app should say the service is unavailable
@@ -85,13 +85,13 @@ Feature: UMPay mobile transfers
   # The saved payees belong to whichever account is signed in, so nothing here asserts a
   # particular one - only that the route opens the list and the list has something in it,
   # which is what a user needs before a template transfer is possible at all.
-  @transfer
+  @transfer @Transfer_TC_003
   Scenario: The saved template route opens the list of payees
     When I take the "UMPay to Existing template" route
     Then the saved template list should be shown
     And the template list should hold at least one saved payee
 
-  @transfer
+  @transfer @Transfer_TC_004
   Scenario: The wallet transfer form asks for everything a wallet transfer needs
     When I take the "UMPay to UMPay Wallet" route
     Then the wallet transfer form should be shown
@@ -106,14 +106,14 @@ Feature: UMPay mobile transfers
   # The button is on screen from the moment the form opens but starts unclickable. Asserting
   # that is a real test of the form's state, where asserting the button merely exists would
   # pass on a completely empty one.
-  @transfer
+  @transfer @Transfer_TC_005
   Scenario: A wallet transfer cannot be sent from an empty form
     When I take the "UMPay to UMPay Wallet" route
     Then the wallet transfer form should be shown
     And the wallet transfer should not be sendable yet
     And the transfer is deliberately not sent
 
-  @transfer
+  @transfer @Transfer_TC_006
   Scenario: Either party can be chosen to pay the wallet transfer fee
     When I take the "UMPay to UMPay Wallet" route
     Then the wallet transfer form should be shown
@@ -125,7 +125,7 @@ Feature: UMPay mobile transfers
 
   # The remark box is the one field on this form that can be typed into, and its counter is
   # a real piece of behaviour: 150 characters, counting down as they are used.
-  @transfer
+  @transfer @Transfer_TC_007
   Scenario: The wallet remark box counts the characters left
     When I take the "UMPay to UMPay Wallet" route
     Then the wallet transfer form should be shown

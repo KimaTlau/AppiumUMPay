@@ -32,12 +32,12 @@ Feature: UMPay mobile login
   #   mvn test -Dumpay.udid=emulator-5554 -Dumpay.deviceName=Android_Emulator \
   #            -Dumpay.platformVersion=16
 
-  @smoke
+  @login @smoke @Login_TC_001
   Scenario: The app opens on a login screen offering both sign in methods
     Given the UMPay app is open on the login screen
     Then the login screen should offer both sign in methods
 
-  @smoke
+  @login @smoke @Login_TC_002
   Scenario Outline: A valid account signs in and reaches the dashboard
     Given the UMPay app is open on the login screen
     When I sign in with the credentials in "<row>" of "<excelSheetName>" of "<excelFileName>"
@@ -48,6 +48,7 @@ Feature: UMPay mobile login
       | excelFileName | excelSheetName | row |
       | Login_TestData.xlsx | Sheet1 | 1 |
 
+  @login @Login_TC_003
   Scenario Outline: A signed in user can sign out again
     Given I log into the UMPay application with valid credentials using "<row>" of "<excelSheetName>" of "<excelFileName>"
     When I sign out

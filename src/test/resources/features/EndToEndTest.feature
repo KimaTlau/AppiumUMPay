@@ -51,7 +51,7 @@ Feature: UMPay mobile end to end journey
   #
   # Run it on its own:  mvn test -Dcucumber.filter.tags="@e2e"
 
-  @e2e
+  @e2e @End_To_End_TC_001
   Scenario: A user signs in, fills every money form, prices a transfer and signs out
 
     # 1 - Login

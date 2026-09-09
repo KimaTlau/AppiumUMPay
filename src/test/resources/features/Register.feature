@@ -70,7 +70,7 @@ Feature: UMPay mobile registration
   # out. That is not hypothetical: it is how a setup step ended up backing out to the phone's
   # home screen. Closing the app means the next launch starts from the top.
 
-  @register
+  @register @Register_TC_001
   Scenario Outline: A new account is registered and the app asks to verify the email address
     Given the UMPay app is open on the login screen
     When I open the registration form

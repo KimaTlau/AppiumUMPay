@@ -17,7 +17,7 @@ Feature: UMPay mobile convert
   # The action here is named Convert rather than Confirm - the same word as the form's own
   # title - which is why the label is passed in from the scenario.
 
-  @money @convert
+  @money @convert @Convert_TC_001
   Scenario Outline: A conversion prices the amount and offers to convert
     Given I log into the UMPay application with valid credentials using "<row>" of "<excelSheetName>" of "<excelFileName>"
     When I open the "Convert" form from the dashboard

@@ -42,6 +42,7 @@ Feature: UMPay mobile global transfer
   # The two scenarios that assert only what the empty form states name no row: they enter
   # nothing, so they sign in from Login_TestData and stop there.
 
+  @globaltransfer @Global_Transfer_TC_001
   Scenario: UnionPay China states its limits before anything is entered
     Given I log into the UMPay application with valid credentials using "1" of "Sheet1" of "Login_TestData.xlsx"
     When I open the transfer hub
@@ -59,6 +60,7 @@ Feature: UMPay mobile global transfer
   # transfer - rate, fee, total and what actually arrives - and only then does it offer to
   # send it. Both halves matter: a form that priced without enabling, or enabled without
   # pricing, would be broken in a way that "the button exists" would never catch.
+  @globaltransfer @Global_Transfer_TC_002
   Scenario Outline: UnionPay China prices the transfer once a valid amount is entered
     Given I log into the UMPay application with valid credentials using "<row>" of "<excelSheetName>" of "<excelFileName>"
     When I open the transfer hub
@@ -80,6 +82,7 @@ Feature: UMPay mobile global transfer
 
   # The form states a minimum of 10.00 USD. An amount under it should leave the transfer
   # unpriced and unsendable - the same validation as above, tested from the failing side.
+  @globaltransfer @Global_Transfer_TC_003
   Scenario Outline: UnionPay China refuses an amount below its minimum
     Given I log into the UMPay application with valid credentials using "<row>" of "<excelSheetName>" of "<excelFileName>"
     When I open the transfer hub
@@ -95,6 +98,7 @@ Feature: UMPay mobile global transfer
 
   # Global is the same screen as China with one difference that matters: it does not convert,
   # so it has no receive currency. Asserting the absence is the point of the scenario.
+  @globaltransfer @Global_Transfer_TC_004
   Scenario: UnionPay Global offers the same form without a receive currency
     Given I log into the UMPay application with valid credentials using "1" of "Sheet1" of "Login_TestData.xlsx"
     When I open the transfer hub
