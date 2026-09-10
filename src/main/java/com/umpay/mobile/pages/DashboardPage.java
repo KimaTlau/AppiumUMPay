@@ -104,6 +104,35 @@ public class DashboardPage extends BasePage {
 	}
 
 	/**
+	 * What the dashboard writes in place of an amount it is not showing.
+	 *
+	 * Four asterisks rather than the usual mask of one per digit, so a balance and a blocked
+	 * amount look the same while hidden and neither says how long it is.
+	 */
+	private static final String HIDDEN = "****";
+
+	/**
+	 * True while the dashboard is masking what the account holds.
+	 *
+	 * Asked of the dashboard rather than of a general reader of whatever is on screen: this
+	 * is a statement about the home screen's own behaviour, and a step that read the labels
+	 * for itself would go on quietly answering after a mis-tap had left some other screen in
+	 * front of it.
+	 */
+	public boolean amountsAreHidden() {
+
+		return labelsOnScreen().contains(HIDDEN);
+
+	}
+
+	/** Everything the dashboard says, for a message that has to name what was seen. */
+	public String text() {
+
+		return labelsOnScreen();
+
+	}
+
+	/**
 	 * Returns to the dashboard from wherever the app currently is.
 	 *
 	 * Backing out rather than restarting the app: a restart would lose the session and
@@ -139,8 +168,24 @@ public class DashboardPage extends BasePage {
 	 */
 	public void closeNotificationShade() {
 
+		/*
+		 * Collapsed unconditionally, without first deciding whether the shade is down.
+		 *
+		 * It used to be gated on the SHADE caption, and that gate was the bug: "Clear all
+		 * notifications" is only drawn when the shade holds several notifications, so a
+		 * shade carrying one - which is what a chat message arriving mid-run leaves - was
+		 * not recognised as a shade at all. Two scenarios failed that way after the check
+		 * itself had been fixed, listing "Alerted | Collapse | Expand" and no clear-all.
+		 *
+		 * Asking the system to collapse a status bar that is already collapsed does
+		 * nothing, so there is no reason to guess first. The guess was the only thing that
+		 * could be wrong here, so it is gone.
+		 */
+		collapseStatusBar();
+
+		// Back only if the shade is still there, and only then is it worth saying so.
 		for (int attempt = 0; attempt < 3 && isPresent(SHADE, Duration.ofSeconds(1)); attempt++) {
-			System.out.println("The notification shade was covering the screen - closing it");
+			System.out.println("The notification shade is still covering the screen - closing it");
 			pressBack();
 		}
 	}
@@ -172,6 +217,20 @@ public class DashboardPage extends BasePage {
 	 * phone. It is the interaction that had to change, not the way it is found.
 	 */
 	public void openProfile() {
+
+		/*
+		 * Checked here and not only at the start of the scenario.
+		 *
+		 * The shade check used to run once, while getting the app to a known state. That
+		 * covers a shade left down by the previous scenario but not one that arrives during
+		 * this one - and a chat notification landing between sign-in and this tap is exactly
+		 * what happened: the tap hit the shade, and the run failed twenty seconds later
+		 * saying the Log Out entry was missing while listing "Reply" and "Mark as read".
+		 *
+		 * The avatar sits close under the status bar, so this tap is the one most worth
+		 * guarding.
+		 */
+		closeNotificationShade();
 
 		tapAtCentre(PROFILE_AVATAR, "the profile avatar in the top left");
 

@@ -145,9 +145,18 @@ public class ProfileStepDefs {
                 "Opening it did not reach a screen calling itself \"" + named + "\". The screen"
                         + " shows: " + destination().text());
 
+        /*
+         * Read once and measure what was read.
+         *
+         * These screens draw their contents after their title, so two reads a moment apart
+         * are two different screens. Taking the length from a second read is what threw
+         * "begin 0, end 160, length 27" on the commission listing - the substring ran
+         * against the shorter of the two.
+         */
+        String showing = destination().text();
+
         System.out.println("The " + named + " screen opened, showing: "
-                + destination().text().substring(0,
-                        Math.min(160, destination().text().length())));
+                + showing.substring(0, Math.min(160, showing.length())));
     }
 
     @When("I go back from the destination")

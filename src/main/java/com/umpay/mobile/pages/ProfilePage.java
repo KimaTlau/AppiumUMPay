@@ -60,6 +60,16 @@ public class ProfilePage extends BasePage {
 	public void signOut() {
 
 		/*
+		 * The shade again, because the panel is open for several seconds.
+		 *
+		 * Collapsing it when the panel was opened does not help if a notification arrives
+		 * while the list is being scrolled, and this is the lookup that pays for it: the
+		 * failure reads "Could not find the Log Out entry" and lists the shade's own labels
+		 * rather than the panel's. Harmless when there is nothing to collapse.
+		 */
+		collapseStatusBar();
+
+		/*
 		 * Both of these are ordinary clickable controls - the problem was never what they
 		 * are, it was where Log Out ends up.
 		 *

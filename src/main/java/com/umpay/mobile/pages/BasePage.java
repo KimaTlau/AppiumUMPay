@@ -174,6 +174,53 @@ public abstract class BasePage {
 	 */
 	private void adbInput(String... arguments) {
 
+		System.out.println("This device refuses Appium gestures; sending the " + arguments[0]
+				+ " through adb instead");
+
+		java.util.List<String> words = new java.util.ArrayList<>(List.of("input"));
+		words.addAll(List.of(arguments));
+
+		adbShell(words, "This device refuses Appium gestures and adb is not available to fall"
+				+ " back on. Enable 'USB debugging (Security settings)' in the phone's developer"
+				+ " options, or put adb on the path.");
+	}
+
+	/**
+	 * Pulls the notification shade back up, whatever is in it.
+	 *
+	 * Asked of the system rather than mimed with a Back press. Back happens to close the
+	 * shade on this phone, but it is a guess about what has focus: if the shade is not
+	 * actually down, the same press walks the app back a screen, which is the opposite of
+	 * getting to a known state. {@code cmd statusbar collapse} says only the one thing and
+	 * is harmless when there is nothing to collapse.
+	 *
+	 * Failures here are swallowed on purpose. A phone whose shell refuses the command is
+	 * one where the caller's own check will still notice the shade and fall back; a
+	 * housekeeping step is not a reason to end a scenario.
+	 */
+	protected void collapseStatusBar() {
+
+		try {
+			adbShell(List.of("cmd", "statusbar", "collapse"), null);
+
+		} catch (RuntimeException theShellRefused) {
+			System.out.println("Could not ask the system to close the notification shade: "
+					+ theShellRefused.getMessage());
+		}
+	}
+
+	/**
+	 * Runs one adb shell command against the device this run is driving.
+	 *
+	 * The {@code -s} is not optional in principle even though one device is attached today:
+	 * adb picks for itself when more than one is, and a run that silently drove the wrong
+	 * phone would be worse than one that stopped.
+	 *
+	 * @param whenAdbIsMissing what to tell the caller if adb cannot be started at all, or
+	 *                         null to let that surface as an ordinary IllegalStateException
+	 */
+	private void adbShell(java.util.List<String> words, String whenAdbIsMissing) {
+
 		String adb = System.getProperty("umpay.adb", "adb");
 		String udid = System.getProperty("umpay.udid", "");
 
@@ -185,27 +232,23 @@ public abstract class BasePage {
 		}
 
 		command.add("shell");
-		command.add("input");
-		command.addAll(List.of(arguments));
-
-		System.out.println("This device refuses Appium gestures; sending the " + arguments[0]
-				+ " through adb instead");
+		command.addAll(words);
 
 		try {
 			Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
 
 			if (!process.waitFor(20, java.util.concurrent.TimeUnit.SECONDS)) {
 				process.destroyForcibly();
-				throw new IllegalStateException("adb input did not finish in 20 seconds");
+				throw new IllegalStateException("adb " + words.get(0)
+						+ " did not finish in 20 seconds");
 			}
 
 			// The event is delivered asynchronously, so give the app a moment to react.
 			Thread.sleep(600);
 
 		} catch (java.io.IOException cannotStart) {
-			throw new IllegalStateException("This device refuses Appium gestures and adb is not"
-					+ " available to fall back on. Enable 'USB debugging (Security settings)' in"
-					+ " the phone's developer options, or put adb on the path.", cannotStart);
+			throw new IllegalStateException(whenAdbIsMissing != null ? whenAdbIsMissing
+					: "adb could not be started to run " + words, cannotStart);
 
 		} catch (InterruptedException interrupted) {
 			Thread.currentThread().interrupt();

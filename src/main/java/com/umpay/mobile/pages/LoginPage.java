@@ -27,7 +27,18 @@ import java.time.Duration;
  */
 public class LoginPage extends BasePage {
 
-	private static final By TITLE = MobileLocators.labelled("Login");
+	/**
+	 * The title, matched exactly rather than as a substring.
+	 *
+	 * descriptionContains("Login") is true on the Security screen as well, which offers
+	 * "Login Password" and "Biometric Login". That made {@link #isShowing} answer yes while
+	 * the app was somewhere else entirely: the step that gets the app to a known state
+	 * believed it was already on the login screen and returned without signing out, and the
+	 * five scenarios after it all died tapping an Email tab that was never on screen.
+	 *
+	 * The same trap as the Register link two doors down, and the same fix.
+	 */
+	private static final By TITLE = MobileLocators.exactly("Login");
 	private static final By MOBILE_TAB = MobileLocators.tappable("Mobile");
 	private static final By EMAIL_TAB = MobileLocators.tappable("Email");
 	private static final By LOGIN_BUTTON = MobileLocators.tappable("Login");

@@ -48,6 +48,7 @@ public final class DeviceFactory {
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			quitAll();
 			releaseScreen();
+			restoreNotifications();
 		}, "appium-cleanup"));
 	}
 
@@ -56,6 +57,10 @@ public final class DeviceFactory {
 
 	/** The device's own stay-awake setting, put back when the run ends. */
 	private static String previousStayAwake;
+
+	private static final AtomicBoolean NOTIFICATIONS_SILENCED = new AtomicBoolean(false);
+
+	private static String previousZenMode;
 
 	private DeviceFactory() {
 	}
@@ -98,6 +103,7 @@ public final class DeviceFactory {
 				.setFullReset(false);
 
 		keepScreenAwake();
+		silenceNotifications();
 
 		try {
 			AndroidDriver driver = new AndroidDriver(new URL(appiumServer()), options);
@@ -178,6 +184,54 @@ public final class DeviceFactory {
 
 		System.out.println("Holding the screen awake for the run (device setting was "
 				+ (previousStayAwake.isEmpty() ? "unset" : previousStayAwake) + ")");
+	}
+
+	/**
+	 * Silences notifications for the run, so nothing is drawn over the app.
+	 *
+	 * Not about noise. A heads-up notification is a floating window the system draws across
+	 * the top of the screen, over whatever app is in front, and it takes the taps that land
+	 * on it. The profile avatar sits in the top left, directly underneath, so a message
+	 * arriving in the seconds before that tap costs the scenario: the run reports "Could not
+	 * find the Log Out entry" twenty seconds later and lists the notification's own labels -
+	 * "Expand", "Alerted", "Reply" - instead of the profile panel's.
+	 *
+	 * This is a real phone somebody uses, so this is not rare. It cost scenarios in four
+	 * separate runs, and it is worth being clear that none of them was a defect in UMPay.
+	 *
+	 * Distinct from collapsing the status bar, which the pages still do: that closes a shade
+	 * somebody pulled down, and has no effect at all on a heads-up banner. This stops the
+	 * banner being drawn in the first place.
+	 *
+	 * The device's own value is read first and put back by the shutdown hook, for the same
+	 * reason the display timeout is: a borrowed phone should not keep the setting.
+	 */
+	private static void silenceNotifications() {
+
+		if (!NOTIFICATIONS_SILENCED.compareAndSet(false, true)) {
+			return;
+		}
+
+		previousZenMode = adb("settings", "get", "global", "zen_mode");
+
+		// priority rather than none: alarms still sound, so a borrowed phone stays usable.
+		adb("cmd", "notification", "set_dnd", "priority");
+
+		System.out.println("Silencing notifications for the run so nothing is drawn over the app"
+				+ " (device setting was " + (previousZenMode.isEmpty() ? "unset" : previousZenMode)
+				+ ")");
+	}
+
+	/** Puts Do Not Disturb back the way the device had it. */
+	private static void restoreNotifications() {
+
+		if (!NOTIFICATIONS_SILENCED.get() || previousZenMode == null) {
+			return;
+		}
+
+		// Anything other than a plain 0 was some form of Do Not Disturb already, so leave it on.
+		adb("cmd", "notification", "set_dnd",
+				"0".equals(previousZenMode.trim()) || previousZenMode.isEmpty() ? "off" : "priority");
 	}
 
 	/** Puts the display timeout back the way the device had it. */
