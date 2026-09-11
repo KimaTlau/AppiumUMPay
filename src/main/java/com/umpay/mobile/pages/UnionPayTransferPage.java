@@ -40,6 +40,15 @@ public class UnionPayTransferPage extends BasePage {
 
 	private static final By ORDER_DETAILS = MobileLocators.labelled("Order Details");
 
+	/** What the form says when the card cannot cover what was asked for. */
+	private static final By INSUFFICIENT = MobileLocators.labelled("Insufficient Balance");
+
+	/** Carries the figure, as "Card Available Balance 4.75 USD". */
+	private static final By AVAILABLE = MobileLocators.labelled("Card Available Balance");
+
+	/** Carries the floor, as "Limit Min 10.00 USD". */
+	private static final By MINIMUM = MobileLocators.labelled("Limit Min");
+
 	public UnionPayTransferPage(AndroidDriver driver) {
 		super(driver);
 	}
@@ -94,6 +103,46 @@ public class UnionPayTransferPage extends BasePage {
 
 		return !isPresent(ORDER_DETAILS, Duration.ofSeconds(8));
 
+	}
+
+	/**
+	 * True while the form is saying the card cannot cover what was asked for.
+	 *
+	 * Worth asking before concluding anything about the Transfer action. The form prices a
+	 * transfer it has no intention of letting through - every figure appears, correctly - and
+	 * leaves Transfer unclickable. Read on its own that looks like a priced form refusing to
+	 * send; read together with this it is the app declining an amount the account has not got.
+	 */
+	public boolean saysInsufficientBalance() {
+
+		return isPresent(INSUFFICIENT, Duration.ofSeconds(5));
+
+	}
+
+	/** What the card holds, as the form writes it, or an empty string if it does not say. */
+	public String availableBalance() {
+
+		return labelStartingWith(AVAILABLE);
+
+	}
+
+	/** The smallest transfer the route accepts, as the form writes it. */
+	public String minimumAccepted() {
+
+		return labelStartingWith(MINIMUM);
+
+	}
+
+	/** The content-desc of the first element matching, whole, for a message that must quote it. */
+	private String labelStartingWith(By locator) {
+
+		try {
+			String said = waitFor(locator, "a label on the UnionPay form").getAttribute("content-desc");
+			return said == null ? "" : said.replaceAll("\\s+", " ").trim();
+
+		} catch (Exception theFormDoesNotSayIt) {
+			return "";
+		}
 	}
 
 	public boolean canSendTransfer() {

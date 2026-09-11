@@ -310,11 +310,35 @@ public class TransferStepDefs {
 
 	}
 
+	/**
+	 * The form priced it, so it should offer to send it.
+	 *
+	 * The account is asked about first. This case failed for a while reading as a defect - a
+	 * fully priced transfer whose Transfer action never became enabled - and it was not one:
+	 * the card held 4.75 USD, the scenario asked to send 50, and the app priced the transfer
+	 * anyway while saying "Insufficient Balance" and leaving Transfer unclickable. That is
+	 * the application being right. Naming the balance against the amount is what tells the
+	 * difference between an unfunded account and a broken form, and without it this case
+	 * quietly accuses the app of the wrong thing.
+	 */
 	@Then("the UnionPay transfer should become sendable")
 	public void theUnionPayTransferShouldBecomeSendable() {
 
+		if (unionPay().saysInsufficientBalance()) {
+
+			throw new AssertionError(
+					"BLOCKED BY FUNDING, not a defect: the form priced the transfer correctly and"
+							+ " then declined it. The form says \"" + unionPay().availableBalance()
+							+ "\" and \"" + unionPay().minimumAccepted() + "\", while this"
+							+ " scenario asked to send " + unionPay().enteredAmount() + ". Fund the"
+							+ " card, or point the scenario at an account that can cover it,"
+							+ " before reading anything into the Transfer action.");
+		}
+
 		assertTrue(unionPay().canSendTransfer(),
-				"The Transfer action never became enabled on a priced form");
+				"The Transfer action never became enabled on a priced form the account can"
+						+ " afford. The form says \"" + unionPay().availableBalance() + "\" and"
+						+ " the scenario asked to send " + unionPay().enteredAmount());
 
 	}
 
